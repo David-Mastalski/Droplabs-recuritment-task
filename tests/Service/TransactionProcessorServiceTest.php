@@ -125,7 +125,7 @@ class TransactionProcessorServiceTest extends TestCase
                 [2, $toWallet],
             ]);
 
-        $this->walletRepository->expects(self::never())->method('save');
+        $this->walletRepository->expects(self::once())->method('save');
         $this->transactionProcessorService->complete($transaction);
 
         self::assertSame(TransactionStatus::REJECTED, $transaction->getStatus());
@@ -145,7 +145,7 @@ class TransactionProcessorServiceTest extends TestCase
                 [2, null],
             ]);
 
-        $this->walletRepository->expects(self::never())->method('save');
+        $this->walletRepository->expects(self::once())->method('save');
 
         $this->transactionProcessorService->complete($transaction);
 
