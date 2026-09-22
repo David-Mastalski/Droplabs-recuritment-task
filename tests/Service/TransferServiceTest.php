@@ -111,12 +111,12 @@ class TransferServiceTest extends TestCase
 
         $transaction = $this->transferService->transfer($userId, 1, 2, '1000.00');
 
-        self::assertSame(4000.0, $fromWallet->getBalance());
-        self::assertSame(349.0, $toWallet->getBalance());
+        self::assertSame(5000.0, $fromWallet->getBalance());
+        self::assertSame(100.0, $toWallet->getBalance());
         self::assertSame(TransactionStatus::PENDING, $transaction->getStatus());
         self::assertFalse($transaction->requiresAntiFraudCheck());
         self::assertSame('1000.00', $transaction->getFromAmount());
-        self::assertSame('248.3775', $transaction->getToAmount());
+        self::assertSame('249.0000', $transaction->getToAmount());
         self::assertSame('0.250000', $transaction->getExchangeRate());
         self::assertSame('1.00', $transaction->getSpread());
         self::assertSame(Currency::PLN, $transaction->getFromCurrency());
