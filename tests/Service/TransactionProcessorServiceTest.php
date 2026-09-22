@@ -10,6 +10,7 @@ use App\Enum\Currency;
 use App\Enum\TransactionStatus;
 use App\Repository\TransactionRepositoryInterface;
 use App\Repository\WalletRepositoryInterface;
+use App\Repository\CompanyWalletRepositoryInterface;
 use App\Service\TransactionProcessorService;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -20,15 +21,18 @@ class TransactionProcessorServiceTest extends TestCase
     private WalletRepositoryInterface $walletRepository;
     private TransactionRepositoryInterface $transactionRepository;
     private TransactionProcessorService $transactionProcessorService;
+    private CompanyWalletRepositoryInterface $companyWalletRepository;
 
     protected function setUp(): void
     {
         $this->walletRepository = $this->createMock(WalletRepositoryInterface::class);
         $this->transactionRepository = $this->createMock(TransactionRepositoryInterface::class);
+        $this->companyWalletRepository = $this->createMock(CompanyWalletRepositoryInterface::class);
 
         $this->transactionProcessorService = new TransactionProcessorService(
             $this->walletRepository,
             $this->transactionRepository,
+            $this->companyWalletRepository,
         );
     }
 
@@ -58,6 +62,11 @@ class TransactionProcessorServiceTest extends TestCase
             ->expects(self::once())
             ->method('save')
             ->with($transaction);
+
+        $this->companyWalletRepository
+            ->expects(self::once())
+            ->method('addToBalance')
+            ->with(Currency::EUR, '0.5000');
 
         $this->transactionProcessorService->complete($transaction);
 

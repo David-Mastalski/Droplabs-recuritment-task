@@ -6,6 +6,7 @@ namespace App\Service;
 
 use App\Entity\Transaction;
 use App\Enum\TransactionStatus;
+use App\Repository\CompanyWalletRepositoryInterface;
 use App\Repository\TransactionRepositoryInterface;
 use App\Repository\WalletRepositoryInterface;
 use DateTimeImmutable;
@@ -15,6 +16,7 @@ final readonly class TransactionProcessorService
     public function __construct(
         private WalletRepositoryInterface $walletRepository,
         private TransactionRepositoryInterface $transactionRepository,
+        private CompanyWalletRepositoryInterface $companyWalletRepository,
     ) {
     }
 
@@ -43,6 +45,8 @@ final readonly class TransactionProcessorService
 
         $this->walletRepository->save($fromWallet);
         $this->walletRepository->save($toWallet);
+
+        $this->companyWalletRepository->addToBalance($transaction->getToCurrency(), $transaction->getSpread());
 
         $transaction->setStatus(TransactionStatus::COMPLETED);
 
