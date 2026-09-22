@@ -29,6 +29,12 @@ final readonly class TransactionProcessorService
             return;
         }
 
+        if ($fromWallet->getBalance() < (float) $transaction->getFromAmount()) {
+            $this->reject($transaction);
+
+            return;
+        }
+
         $fromWallet->setBalance($fromWallet->getBalance() - (float) $transaction->getFromAmount());
         $fromWallet->setLastActivityAt(new DateTimeImmutable());
 

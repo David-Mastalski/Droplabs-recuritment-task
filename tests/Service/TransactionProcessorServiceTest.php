@@ -109,6 +109,28 @@ class TransactionProcessorServiceTest extends TestCase
         self::assertSame(TransactionStatus::REJECTED, $transaction->getStatus());
     }
 
+    public function testCompleteRejectsWhenFromWalletBalanceIsInsufficient(): void
+    {
+        $fromWallet = Wallet::create(1, Currency::PLN);
+        $fromWallet->setBalance(50.0);
+
+        $toWallet = Wallet::create(1, Currency::EUR);
+
+        $transaction = $this->makeTransaction(requiresAntiFraudCheck: false);
+
+        $this->walletRepository
+            ->method('findById')
+            ->willReturnMap([
+                [1, $fromWallet],
+                [2, $toWallet],
+            ]);
+
+        $this->walletRepository->expects(self::never())->method('save');
+        $this->transactionProcessorService->complete($transaction);
+
+        self::assertSame(TransactionStatus::REJECTED, $transaction->getStatus());
+    }
+
     public function testCompleteRejectsWhenToWalletNotFound(): void
     {
         $fromWallet = Wallet::create(1, Currency::PLN);
