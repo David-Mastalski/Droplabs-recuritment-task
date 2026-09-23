@@ -10,6 +10,7 @@ use App\Enum\Currency;
 use App\Enum\TransactionStatus;
 use App\Exception\SameWalletTransferException;
 use App\Exception\WalletNotFoundException;
+use App\Exception\WalletBlockedException;
 use App\Repository\TransactionRepositoryInterface;
 use App\Repository\WalletRepositoryInterface;
 use App\Service\ExchangeRateService;
@@ -209,6 +210,50 @@ class TransferServiceTest extends TestCase
 
         $this->expectException(WalletNotFoundException::class);
         $this->expectExceptionMessage('Wallet 2 not found.');
+
+        $this->transferService->transfer(1, 1, 2, '100.00');
+    }
+
+    public function testTransferThrowsWhenFromWalletisBlocked(): void
+    {
+        $fromWallet = Wallet::create(1, Currency::PLN);
+        $fromWallet->setIsBlocked(true);
+
+        $toWallet = Wallet::create(1, Currency::EUR);
+
+        $this->walletRepository
+            ->method('findById')
+            ->willReturnMap([
+                [1, $fromWallet],
+                [2, $toWallet],
+            ]);
+
+        $this->transactionRepository->expects(self::never())->method('save');
+
+        $this->expectException(WalletBlockedException::class);
+        $this->expectExceptionMessage('Wallet 1 is blocked.');
+
+        $this->transferService->transfer(1, 1, 2, '100.00');
+    }
+
+    public function testTransferThrowsWhenToWalletisBlocked(): void
+    {
+        $fromWallet = Wallet::create(1, Currency::PLN);
+
+        $toWallet = Wallet::create(1, Currency::EUR);
+        $toWallet->setIsBlocked(true);
+
+        $this->walletRepository
+            ->method('findById')
+            ->willReturnMap([
+                [1, $fromWallet],
+                [2, $toWallet],
+            ]);
+
+        $this->transactionRepository->expects(self::never())->method('save');
+
+        $this->expectException(WalletBlockedException::class);
+        $this->expectExceptionMessage('Wallet 2 is blocked.');
 
         $this->transferService->transfer(1, 1, 2, '100.00');
     }

@@ -291,6 +291,28 @@ class WalletControllerTest extends TestCase
         self::assertSame('Transfer to the same wallet 1 is not allowed.', $data['error']);
     }
 
+    public function testTransferReturnsUnprocessableWhenWalletBlocked(): void
+    {
+        $user = new User(1, 'test@example.com', ['ROLE_USER'], new DateTimeImmutable());
+
+        $this->transferService
+            ->method('transfer')
+            ->willThrowException(new WalletBlockedException(1));
+
+        $request = new Request(content: json_encode([
+            'fromWalletId' => 1,
+            'toWalletId' => 2,
+            'amount' => '100.00',
+        ], JSON_THROW_ON_ERROR));
+        $response = $this->controller->transfer($request, $user);
+
+        self::assertSame(422, $response->getStatusCode());
+
+        $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame('Wallet 1 is blocked.', $data['error']);
+    }
+
+
     /**
      * @throws Throwable
      */
@@ -398,4 +420,5 @@ class WalletControllerTest extends TestCase
         $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
         self::assertSame('Wallet 5 is blocked.', $data['error']);
     }
+
 }
