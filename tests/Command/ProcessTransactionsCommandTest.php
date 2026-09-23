@@ -91,4 +91,81 @@ class ProcessTransactionsCommandTest extends TestCase
 
         self::assertStringContainsString('completed.', $this->commandTester->getDisplay());
     }
+
+    public function testFraudReviewTransactionIsApprovedAndCompleted(): void
+    {
+        $transaction = Transaction::create(
+            fromWalletId: 1,
+            toWalletId: 2,
+            fromAmount: '20000.0000',
+            toAmount: '19000.0000',
+            fromCurrency: Currency::PLN,
+            toCurrency: Currency::EUR,
+            spread: '50.0000',
+            exchangeRate: '0.250000',
+            requiresAntiFraudCheck: true,
+        );
+
+        $this->transactionRepository
+            ->method('findByStatus')
+            ->willReturnMap([
+                [TransactionStatus::PENDING, []],
+                [TransactionStatus::FRAUD_REVIEW, [$transaction]],
+            ]);
+
+        $fromWallet = Wallet::create(1, Currency::PLN);
+        $fromWallet->setBalance(50000.0);
+        $toWallet = Wallet::create(1, Currency::EUR);
+
+        $this->walletRepository
+            ->method('findById')
+            ->willReturnMap([
+                [1, $fromWallet],
+                [2, $toWallet],
+            ]);
+
+        $this->commandTester->setInputs(['yes']);
+        $this->commandTester->execute([]);
+
+        self::assertStringContainsString('approved and completed.', $this->commandTester->getDisplay());
+    }
+
+    public function testFraudReviewTransactionIsRejectedWhenDenied(): void
+    {
+        $transaction = Transaction::create(
+            fromWalletId: 1,
+            toWalletId: 2,
+            fromAmount: '20000.0000',
+            toAmount: '19000.0000',
+            fromCurrency: Currency::PLN,
+            toCurrency: Currency::EUR,
+            spread: '50.0000',
+            exchangeRate: '0.250000',
+            requiresAntiFraudCheck: true,
+        );
+
+        $this->transactionRepository
+            ->method('findByStatus')
+            ->willReturnMap([
+                [TransactionStatus::PENDING, []],
+                [TransactionStatus::FRAUD_REVIEW, [$transaction]],
+            ]);
+
+        $fromWallet = Wallet::create(1, Currency::PLN);
+        $fromWallet->setBalance(50000.0);
+        $toWallet = Wallet::create(1, Currency::EUR);
+
+        $this->walletRepository
+            ->method('findById')
+            ->willReturnMap([
+                [1, $fromWallet],
+                [2, $toWallet],
+            ]);
+
+        $this->commandTester->setInputs(['no']);
+        $this->commandTester->execute([]);
+
+        self::assertStringContainsString('rejected.', $this->commandTester->getDisplay());
+    }
+
 }
