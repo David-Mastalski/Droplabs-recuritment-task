@@ -8,6 +8,7 @@ use App\Entity\Transaction;
 use App\Entity\Wallet;
 use App\Enum\Currency;
 use App\Enum\TransactionStatus;
+use App\Exception\SameWalletTransferException;
 use App\Exception\WalletNotFoundException;
 use App\Repository\TransactionRepositoryInterface;
 use App\Repository\WalletRepositoryInterface;
@@ -121,6 +122,22 @@ class TransferServiceTest extends TestCase
         self::assertSame('1.00', $transaction->getSpread());
         self::assertSame(Currency::PLN, $transaction->getFromCurrency());
         self::assertSame(Currency::EUR, $transaction->getToCurrency());
+    }
+
+    public function testTransferThrowsWhenFromAndToWalletAreTheSame(): void
+    {
+        $this->walletRepository
+            ->expects(self::never())
+            ->method('findById');
+
+        $this->transactionRepository
+            ->expects(self::never())
+            ->method('save');
+
+        $this->expectException(SameWalletTransferException::class);
+        $this->expectExceptionMessage('Transfer to the same wallet 1 is not allowed.');
+
+        $this->transferService->transfer(1, 1, 1, '100.00');
     }
 
     public function testTransferThrowsWhenFromWalletNotFound(): void

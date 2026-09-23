@@ -8,6 +8,7 @@ use App\Dto\TransactionResponse;
 use App\Dto\WalletResponse;
 use App\Entity\User;
 use App\Enum\Currency;
+use App\Exception\SameWalletTransferException;
 use App\Exception\WalletAlreadyExistsException;
 use App\Exception\WalletBlockedException;
 use App\Exception\WalletNotFoundException;
@@ -40,7 +41,7 @@ final class WalletController extends AbstractController
     {
         $wallets = $this->walletRepository->findByUserId($user->getIdNotNull());
 
-        return new JsonResponse(array_map(static fn ($w) => new WalletResponse($w), $wallets));
+        return new JsonResponse(array_map(static fn($w) => new WalletResponse($w), $wallets));
     }
 
     /**
@@ -97,6 +98,8 @@ final class WalletController extends AbstractController
             );
         } catch (WalletNotFoundException $e) {
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
+        } catch (SameWalletTransferException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }
 
         return new JsonResponse(new TransactionResponse($transaction), Response::HTTP_CREATED);

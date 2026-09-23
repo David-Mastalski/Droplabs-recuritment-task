@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Transaction;
+use App\Exception\SameWalletTransferException;
 use App\Exception\WalletNotFoundException;
 use App\Repository\TransactionRepositoryInterface;
 use App\Repository\WalletRepositoryInterface;
@@ -25,6 +26,11 @@ readonly class TransferService
         int $toWalletId,
         string $fromAmount,
     ): Transaction {
+
+        if ($fromWalletId === $toWalletId) {
+            throw new SameWalletTransferException($fromWalletId);
+        }
+
         $fromWallet = $this->walletRepository->findById($fromWalletId);
         if (null === $fromWallet || $fromWallet->getUserId() !== $userId) {
             throw new WalletNotFoundException($fromWalletId);
