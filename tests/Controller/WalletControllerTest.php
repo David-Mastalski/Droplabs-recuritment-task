@@ -11,7 +11,9 @@ use App\Entity\Wallet;
 use App\Enum\Currency;
 use App\Enum\TransactionStatus;
 use App\Exception\WalletAlreadyExistsException;
+use App\Exception\WalletBalanceNotZeroException;
 use App\Exception\WalletBlockedException;
+use App\Exception\WalletHasTransactionsException;
 use App\Exception\WalletNotFoundException;
 use App\Exception\SameWalletTransferException;
 use App\Repository\WalletRepositoryInterface;
@@ -421,4 +423,61 @@ class WalletControllerTest extends TestCase
         self::assertSame('Wallet 5 is blocked.', $data['error']);
     }
 
+    public function testDeleteWalletSuccessfully(): void
+    {
+        $user = new User(1, 'test@example.com', ['ROLE_USER'], new DateTimeImmutable());
+
+        $this->walletService
+            ->expects(self::once())
+            ->method('deleteWallet')
+            ->with(1,5);
+
+        $response = $this->controller->delete(5, $user);
+        self::assertSame(204, $response->getStatusCode());
+    }
+
+    public function testDeleteReturnsNotFoundWhenWalletNotFound(): void
+    {
+        $user = new User(1, 'test@example.com', ['ROLE_USER'], new DateTimeImmutable());
+
+        $this->walletService
+            ->method('deleteWallet')
+            ->willThrowException(new WalletNotFoundException(99));
+
+        $response = $this->controller->delete(99, $user);
+        self::assertSame(404, $response->getStatusCode());
+
+        $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame('Wallet 99 not found.', $data['error']);
+    }
+
+    public function testDeleteWalletBalanceNotZero(): void
+    {
+        $user = new User(1, 'test@example.com', ['ROLE_USER'], new DateTimeImmutable());
+
+        $this->walletService
+            ->method('deleteWallet')
+            ->willThrowException(new WalletBalanceNotZeroException(5));
+
+        $response = $this->controller->delete(99, $user);
+        self::assertSame(409, $response->getStatusCode());
+
+        $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame('Wallet 5 cannot be deleted because it has a non-zero balance.', $data['error']);
+    }
+
+    public function testDeleteWalletHasTransactionsException(): void
+    {
+        $user = new User(1, 'test@example.com', ['ROLE_USER'], new DateTimeImmutable());
+
+        $this->walletService
+            ->method('deleteWallet')
+            ->willThrowException(new WalletHasTransactionsException(5));
+
+        $response = $this->controller->delete(99, $user);
+        self::assertSame(409, $response->getStatusCode());
+
+        $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame('Wallet 5 cannot be deleted because it has transaction history.', $data['error']);
+    }
 }
