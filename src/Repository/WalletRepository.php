@@ -173,4 +173,15 @@ readonly class WalletRepository implements WalletRepositoryInterface
             ]
         );
     }
+
+    public function delete(Wallet $wallet): void
+    {
+        $qb = $this->connection->createQueryBuilder();
+
+        $qb
+            ->delete(self::TABLE_NAME)
+            ->where('id = :id');
+
+        $this->connection->executeQuery($qb->getSQL(), ['id' => $wallet->getId()]);
+    }
 }
